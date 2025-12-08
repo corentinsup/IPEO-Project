@@ -20,6 +20,14 @@ class TrainingOpts:
     num_epochs: int
     batch_size: int
 
+# LOSS OPTIONS
+@dataclass
+class LossOpts:
+    type: str
+    weights_ce: float 
+    weights_dice: float 
+    smooth: float
+
 # METRICS OPTIONS
 @dataclass
 class MetricThreshold:
@@ -61,6 +69,7 @@ class Paths:
 class Config:
     model_opts: ModelOpts
     training_opts: TrainingOpts
+    loss_opts: LossOpts
     metrics_opts: MetricsOpts
     paths: Paths
 
@@ -75,6 +84,7 @@ def load_config(path: str = "config.yaml") -> Config:
     return Config(
         model_opts=ModelOpts(**raw_config["model_opts"]),
         training_opts=TrainingOpts(**raw_config["training_opts"]),
+        loss_opts=LossOpts(**raw_config["loss_opts"]),
         metrics_opts=MetricsOpts(
             IoU=MetricThreshold(**raw_config["metrics_opts"]["IoU"]),
             pixel_acc=MetricThreshold(**raw_config["metrics_opts"]["pixel_acc"]),

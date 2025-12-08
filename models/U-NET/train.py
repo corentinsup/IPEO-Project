@@ -8,6 +8,7 @@ import segmentation_models_pytorch as smp
 from src.dataset import makeDataloader
 from config.config import load_config
 from src.metrics import metrics, update_metrics, agg_metrics
+from src.losses import DiceLoss, CE_DiceLoss
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
@@ -55,7 +56,15 @@ def initialize_model(config):
     model.encoder.conv1 = first_conv
 
     # define loss function and optimizer
-    criterion = torch.nn.CrossEntropyLoss()
+    if config.loss_opts.type == "DiceLoss":
+        criterion = DiceLoss(smooth=config.loss_opts.smooth)
+    elif config.loss_opts.type == "CE_DiceLoss":
+        criterion = CE_DiceLoss(weights_ce=config.loss_opts.weights_ce, 
+                                weights_dice=config.loss_opts.weights_dice, 
+                                smooth=config.loss_opts.smooth)
+    else:
+        criterion = torch.nn.CrossEntropyLoss()
+
     optimizer = torch.optim.Adam(model.parameters(), lr=config.training.learning_rate, weight_decay=config.training.weight_decay)
     return model, criterion, optimizer
 

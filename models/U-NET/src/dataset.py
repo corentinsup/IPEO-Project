@@ -23,12 +23,14 @@ class GlacierImageDataset(Dataset):
         if self.target_transform:
             label = self.target_transform(label)
         return image, label
+
     
 def makeDataloader(csv_file, img_dir, batch_size, shuffle=True, transform=None, target_transform=None):
     dataset = GlacierImageDataset(annotations_file=csv_file, img_dir=img_dir, 
                                  transform=transform, target_transform=target_transform)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
     return dataloader
+
 
 """
 Custom Dataset for Training

@@ -10,6 +10,12 @@ training_opts:
   num_epochs: 10
   batch_size: 32
 
+loss_opts:
+  type: "CE_DiceLoss"
+  smooth: 1
+  weights_ce: 0.5
+  weights_dice: 0.5
+
 metrics_opts:
   IoU:
     threshold: 0.4
