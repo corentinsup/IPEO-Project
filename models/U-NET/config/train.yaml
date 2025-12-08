@@ -1,0 +1,38 @@
+model_opts:
+  batch_norm : True
+  inchannels: 4
+  classes: 2
+  lr: 0.0001
+  weights_decay : 0
+
+training_opts: 
+  run_name: "demo"
+  num_epochs: 10
+  batch_size: 32
+
+metrics_opts:
+  IoU:
+    threshold: 0.4
+  pixel_acc:
+    threshold: 0.4
+  precision:
+    threshold: 0.4
+  recall:
+    threshold: 0.4
+  dice:
+    threshold: 0.4
+
+paths: 
+  training:
+    config_file: "/datadrive/glaciers/conf/train.yaml"
+    dataset_path: "path/to/data"
+    save_path: "best_model.pth"
+    train_csv: "path/to/csv"
+    val_csv: "path/to/csv"
+    train_img_dir: "path/to/images"
+    val_img_dir: "path/to/images"
+  inference:
+    config_file: "/datadrive/glaciers/conf/train.yaml"
+    dataset_path: "path/to/data"
+    test_csv: "path/to/csv"
+    train_img_dir: "path/to/images" 
