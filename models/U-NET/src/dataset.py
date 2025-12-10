@@ -54,7 +54,7 @@ class GlacierDataset(Dataset):
         Initialize dataset.
         """
 
-        self.img_files = glob.glob(os.path.join(folder_path, '*img*'))
+        self.img_files = sorted(glob.glob(os.path.join(folder_path, '*img*.npz')))
         self.mask_files = [s.replace("img", "mask") for s in self.img_files]
         self.transform = transform
         self.target_transform = target_transform
