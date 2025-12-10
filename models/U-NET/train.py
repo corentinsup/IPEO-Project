@@ -5,7 +5,7 @@ import argparse
 import json
 import segmentation_models_pytorch as smp
 
-from src.dataset import makeDataloader
+from src.dataset import fetch_loaders
 from config.config import load_config
 from src.metrics import metrics, update_metrics, agg_metrics
 from src.losses import DiceLoss, CE_DiceLoss
@@ -178,8 +178,7 @@ if __name__ == "__main__":
     val_img_dir = os.path.join(config.paths.training.dataset_path, config.paths.training.val_img_dir)
 
     # Data loaders
-    train_loader = makeDataloader(train_csv, train_img_dir, config.training_opts.batch_size, shuffle=True)
-    val_loader = makeDataloader(val_csv, val_img_dir, config.training_opts.batch_size, shuffle=False)
+    train_loader, val_loader = fetch_loaders(config.paths.training.dataset_path, config.training_opts.batch_size, train_folder=config.paths.training.train_img_dir, dev_folder=config.paths.training.val_img_dir)
     
     # model initialization 
     model, criterion, optimizer = initialize_model(config)
