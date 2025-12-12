@@ -2,43 +2,41 @@ import os
 import glob
 import numpy as np
 import torch
-from torch.utils.data import Dataset, DataLoader
-'''  
-def makeDataloader(csv_file, img_dir, batch_size, shuffle=True, transform=None, target_transform=None):
-    dataset = GlacierImageDataset(annotations_file=csv_file, img_dir=img_dir, 
-                                 transform=transform, target_transform=target_transform)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
-    return dataloader
-'''
+from torch.utils.data import Dataset, DataLoader, TensorDataset
 
 
-def fetch_loaders(processed_dir, batch_size=32,
-                  train_folder='train', dev_folder='dev', test_folder='',
-                  shuffle=True):
+def fetch_loaders(x_train, y_train, x_val, y_val, batch_size=32, shuffle=True):
     """ Function to fetch dataLoaders for the Training / Validation
 
     Args:
-        processed_dir(str): Directory with the processed data
+        x_train(np.ndarray): Training images
+        y_train(np.ndarray): Training labels
+        x_val(np.ndarray): Validation images
+        y_val(np.ndarray): Validation labels
         batch_size(int): The size of each batch during training. Defaults to 32.
+        shuffle(bool): Whether to shuffle training data. Defaults to True.
 
     Return:
         Returns train and val dataloaders
 
     """
-    train_dataset = GlacierDataset(processed_dir / train_folder)
-    val_dataset = GlacierDataset(processed_dir / dev_folder)
-    loader = {
-        "train": DataLoader(train_dataset, batch_size=batch_size,
-                            num_workers=8, shuffle=shuffle),
-        "val": DataLoader(val_dataset, batch_size=batch_size,
-                          num_workers=3, shuffle=False)}
+    # Convert numpy arrays to torch tensors
+    x_train_t = torch.from_numpy(x_train).float()
+    y_train_t = torch.from_numpy(y_train).long()
+    x_val_t = torch.from_numpy(x_val).float()
+    y_val_t = torch.from_numpy(y_val).long()
+    
+    # Create TensorDatasets
+    train_dataset = TensorDataset(x_train_t, y_train_t)
+    val_dataset = TensorDataset(x_val_t, y_val_t)
+    
+    # Create DataLoaders
+    train_loader = DataLoader(train_dataset, batch_size=batch_size,
+                            num_workers=4, shuffle=shuffle)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size,
+                          num_workers=2, shuffle=False)
 
-    if test_folder:
-        test_dataset = GlacierDataset(processed_dir / test_folder)
-        loader["test"] = DataLoader(test_dataset, batch_size=batch_size,
-                                    num_workers=3, shuffle=False)
-
-    return loader
+    return train_loader, val_loader
 
 
 class GlacierDataset(Dataset):

@@ -11,7 +11,7 @@ class ModelOpts:
     inchannels: int
     classes: int
     lr: float
-    weights_decay: float
+    weight_decay: float
 
 # TRAINING OPTIONS
 @dataclass

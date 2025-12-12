@@ -1,8 +1,10 @@
 import os
 import torch
+import numpy as np
 import torch.nn as nn
 import argparse
 import json
+import dataclasses
 import segmentation_models_pytorch as smp
 
 from src.dataset import fetch_loaders
@@ -31,15 +33,15 @@ def initialize_model(config):
         encoder_name="resnet34",
         encoder_weights="imagenet",
         decoder_use_batchnorm=config.model_opts.batch_norm,
-        in_channels=config.model_opts.in_channels, # RGB + NIR channels
+        in_channels=3, # RGB + NIR channels
         classes=config.model_opts.classes,    # glacier vs non-glacier
     )
 
     # need to create a new conv layer for the new input channels
     old_conv = model.encoder.conv1
 
-    first_conv = nn.Conv2d(
-        in_channels=config.model_opts.in_channels, 
+    new_conv = nn.Conv2d(
+        in_channels=config.model_opts.inchannels, 
         out_channels=old_conv.out_channels, 
         kernel_size=old_conv.kernel_size, 
         stride=old_conv.stride, 
@@ -47,13 +49,27 @@ def initialize_model(config):
         bias=(old_conv.bias is not None)
     )
 
-    # Copy ImageNet weights for the first 3 channels
-    first_conv.weight.data[:, :3, :, :] = old_conv.weight.data
-    # Initialize the 4th channel as the mean of the first three
-    first_conv.weight.data[:, 3:4, :, :] = old_conv.weight.data.mean(dim=1, keepdim=True)
+    # Copy ImageNet weights for the first 3 channels (RGB)
+    with torch.no_grad():
+        new_conv.weight[:, :3, :, :] = old_conv.weight
+        # Initialize the additional channels (4-6) as the mean of the first three
+        if config.model_opts.inchannels > 3:
+            mean_weight = old_conv.weight.mean(dim=1, keepdim=True)
+            for i in range(3, config.model_opts.inchannels):
+                new_conv.weight[:, i:i+1, :, :] = mean_weight
+        
+        '''trained_kernel = trained_layer.weight # this is the pretrained RGB kernel
+        new_conv = nn.ConvLayer2d( 6, out_channels, kernel_size, ...)
+        new_conv.weight[:,:3] = trained_kernel
+        # if d is the dimension over which you want to average:
+        new_conv.weight[:,3:] = torch.mean(trained_kernel, d).unsqueeze(d).expand_as(trained_kernel)'''
+        
+        # Copy bias if it exists
+        if old_conv.bias is not None:
+            new_conv.bias = old_conv.bias
 
     # Replace the model's first conv layer with the new one
-    model.encoder.conv1 = first_conv
+    model.encoder.conv1 = new_conv
 
     # define loss function and optimizer
     if config.loss_opts.type == "DiceLoss":
@@ -65,7 +81,7 @@ def initialize_model(config):
     else:
         criterion = torch.nn.CrossEntropyLoss()
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=config.training.learning_rate, weight_decay=config.training.weight_decay)
+    optimizer = torch.optim.Adam(model.parameters(), lr=config.model_opts.lr, weight_decay=config.model_opts.weight_decay)
     return model, criterion, optimizer
 
 def train_one_epoch(model, dataloader, criterion, optimizer, device, metrics_opts):
@@ -75,6 +91,9 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device, metrics_opt
 
     for inputs, targets in tqdm(dataloader, desc="Training Batches", smoothing=0.4):
         inputs, targets = inputs.to(device), targets.to(device)
+
+        print("Inputs shape:", inputs.shape)
+        print("Targets shape:", targets.shape)
 
         optimizer.zero_grad()
         outputs = model(inputs)
@@ -122,7 +141,7 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, device, c
         run_name=config.training_opts.run_name,
         num_epochs=config.training_opts.num_epochs,
         learning_rate=config.model_opts.lr, 
-        weight_decay=config.model_opts.weights_decay,
+        weight_decay=config.model_opts.weight_decay,
         batch_size=config.training_opts.batch_size
     )
 
@@ -132,7 +151,7 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, device, c
 
     writer = SummaryWriter(log_dir)
     writer.add_text("Arguments", json.dumps(args))
-    writer.add_text("Configuration Parameters", json.dumps(config))
+    writer.add_text("Configuration Parameters", json.dumps(dataclasses.asdict(config)))
     out_dir = f"{config.paths.training.dataset_path}/runs/{config.training_opts.run_name}/models/"
     #mask_names = config.log_opts.mask_names
 
@@ -172,13 +191,24 @@ if __name__ == "__main__":
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    train_csv = os.path.join(config.paths.training.dataset_path, config.paths.training.train_csv)
-    val_csv = os.path.join(config.paths.training.dataset_path, config.paths.training.val_csv)
-    train_img_dir = os.path.join(config.paths.training.dataset_path, config.paths.training.train_img_dir)
-    val_img_dir = os.path.join(config.paths.training.dataset_path, config.paths.training.val_img_dir)
+    # Load preprocessed data from .npz files
+    train_npz_path = os.path.join(config.paths.training.dataset_path, 'glacier_train.npz')
+    val_npz_path = os.path.join(config.paths.training.dataset_path, 'glacier_val.npz')
+    
+    train_data = np.load(train_npz_path)
+    val_data = np.load(val_npz_path)
 
-    # Data loaders
-    train_loader, val_loader = fetch_loaders(config.paths.training.dataset_path, config.training_opts.batch_size, train_folder=config.paths.training.train_img_dir, dev_folder=config.paths.training.val_img_dir)
+    # Extract images and masks from the npz files
+    x_train = train_data['X_train']  # Shape: (N, C, H, W)
+    y_train = train_data['y_train']  # Shape: (N,)
+    x_val = val_data['X']  # Shape: (N, C, H, W)
+    y_val = val_data['y']  # Shape: (N,)
+
+    print(f"Loaded training data: {x_train.shape}, labels: {y_train.shape}")
+    print(f"Loaded validation data: {x_val.shape}, labels: {y_val.shape}")
+
+    # Create data loaders from numpy arrays
+    train_loader, val_loader = fetch_loaders(x_train, y_train, x_val, y_val, config.training_opts.batch_size)
     
     # model initialization 
     model, criterion, optimizer = initialize_model(config)
