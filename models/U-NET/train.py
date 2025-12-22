@@ -10,7 +10,7 @@ import segmentation_models_pytorch as smp
 from src.dataset import fetch_loaders
 from config.config import load_config
 from src.metrics import metrics, update_metrics, agg_metrics
-from src.losses import DiceLoss, CE_DiceLoss
+from src.losses_binary import BinaryDiceLoss, DiceBCELoss
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
@@ -73,13 +73,13 @@ def initialize_model(config):
 
     # define loss function and optimizer
     if config.loss_opts.type == "DiceLoss":
-        criterion = DiceLoss(smooth=config.loss_opts.smooth)
+        criterion = BinaryDiceLoss(smooth=config.loss_opts.smooth)
     elif config.loss_opts.type == "CE_DiceLoss":
-        criterion = CE_DiceLoss(weights_ce=config.loss_opts.weights_ce, 
+        criterion = DiceBCELoss(weights_ce=config.loss_opts.weights_ce, 
                                 weights_dice=config.loss_opts.weights_dice, 
                                 smooth=config.loss_opts.smooth)
     else:
-        criterion = torch.nn.CrossEntropyLoss()
+        criterion = torch.nn.BCEWithLogitsLoss()
 
     optimizer = torch.optim.Adam(model.parameters(), lr=config.model_opts.lr, weight_decay=config.model_opts.weight_decay)
     return model, criterion, optimizer
@@ -89,20 +89,19 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device, metrics_opt
     running_loss = 0.0
     metrics_accum = {}
 
-    for inputs, targets in tqdm(dataloader, desc="Training Batches", smoothing=0.4):
-        inputs, targets = inputs.to(device), targets.to(device)
-
-        print("Inputs shape:", inputs.shape)
-        print("Targets shape:", targets.shape)
+    for inputs, targets in dataloader:
+        inputs, targets = inputs.to(device), targets.to(device).float()
 
         optimizer.zero_grad()
-        outputs = model(inputs)
-        loss = criterion(outputs, targets)
+        logits = model(inputs)
+        targets = targets.unsqueeze(1)  # add channel dimension
+
+        loss = criterion(logits, targets)
         loss.backward()
         optimizer.step()
 
         running_loss += loss.item() * inputs.size(0)
-        metrics_batch = metrics(outputs, targets, metrics_opts)
+        metrics_batch = metrics(logits, targets, dataclasses.asdict(metrics_opts))
 
         # accumulate metrics
         update_metrics(metrics_accum, metrics_batch)
@@ -118,14 +117,16 @@ def validate_one_epoch(model, dataloader, criterion, device, metrics_opts):
     metrics_accum = {}
 
     with torch.no_grad():
-        for inputs, targets in tqdm(dataloader, desc="Validation Batches", smoothing=0.4):
+        for inputs, targets in dataloader:
             inputs, targets = inputs.to(device), targets.to(device)
 
             outputs = model(inputs)
+            targets = targets.unsqueeze(1).float()  # add channel dimension
+
             loss = criterion(outputs, targets)
 
             running_loss += loss.item() * inputs.size(0)
-            metrics_batch = metrics(outputs, targets, metrics_opts)
+            metrics_batch = metrics(outputs, targets, dataclasses.asdict(metrics_opts))
             # accumulate metrics
             update_metrics(metrics_accum, metrics_batch)
         
@@ -134,7 +135,23 @@ def validate_one_epoch(model, dataloader, criterion, device, metrics_opts):
     epoch_loss = running_loss / len(dataloader.dataset)
     return epoch_loss, metrics_accum
 
-def train_model(model, train_loader, val_loader, criterion, optimizer, device, config):
+def train_model(config):
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # initialize model, criterion, optimizer
+    print("Initializing model...")
+    model, criterion, optimizer = initialize_model(config)
+    model.to(device)
+
+    # fetch data loaders
+    print("Fetching data loaders...")
+    train_loader, val_loader = fetch_loaders(
+        npz_path=config.paths.training.dataset_path,
+        batch_size=config.training_opts.batch_size,
+        shuffle=True
+    )
+
     best_val_loss = float('inf')
     
     args = dict(
@@ -146,16 +163,19 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, device, c
     )
 
     # Setup logging
-    log_dir = f"{config.paths.training.dataset_path}/runs/{config.training_opts.run_name}/logs/"
+    log_dir = f"{config.paths.training.save_path}/runs/{config.training_opts.run_name}/logs/"
+    out_dir = f"{config.paths.training.save_path}/runs/{config.training_opts.run_name}/models/"
     os.makedirs(log_dir, exist_ok=True)
+    os.makedirs(out_dir, exist_ok=True)
 
     writer = SummaryWriter(log_dir)
     writer.add_text("Arguments", json.dumps(args))
     writer.add_text("Configuration Parameters", json.dumps(dataclasses.asdict(config)))
-    out_dir = f"{config.paths.training.dataset_path}/runs/{config.training_opts.run_name}/models/"
+    
     #mask_names = config.log_opts.mask_names
 
-    for epoch in tqdm(range(config.training_opts.num_epochs), desc="Training Epochs", smoothing=0.4):
+    for epoch in tqdm(range(config.training_opts.num_epochs), desc="Training Epochs", smoothing=0.9):
+
         train_loss, train_metrics = train_one_epoch(model, train_loader, criterion, optimizer, device, config.metrics_opts)
         val_loss, val_metrics = validate_one_epoch(model, val_loader, criterion, device, config.metrics_opts)
 
@@ -189,9 +209,7 @@ if __name__ == "__main__":
 
     config = load_config(args.config)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    # Load preprocessed data from .npz files
+    '''device = torch.device("cuda" if torch.cuda.is_available() else "cpu")   # Load preprocessed data from .npz files
     train_npz_path = os.path.join(config.paths.training.dataset_path, 'glacier_train.npz')
     val_npz_path = os.path.join(config.paths.training.dataset_path, 'glacier_val.npz')
     
@@ -199,10 +217,10 @@ if __name__ == "__main__":
     val_data = np.load(val_npz_path)
 
     # Extract images and masks from the npz files
-    x_train = train_data['X_train']  # Shape: (N, C, H, W)
-    y_train = train_data['y_train']  # Shape: (N,)
+    x_train = train_data['X']  # Shape: (N, C, H, W)
+    y_train = train_data['Y']  # Shape: (N,)
     x_val = val_data['X']  # Shape: (N, C, H, W)
-    y_val = val_data['y']  # Shape: (N,)
+    y_val = val_data['Y']  # Shape: (N,)
 
     print(f"Loaded training data: {x_train.shape}, labels: {y_train.shape}")
     print(f"Loaded validation data: {x_val.shape}, labels: {y_val.shape}")
@@ -212,6 +230,6 @@ if __name__ == "__main__":
     
     # model initialization 
     model, criterion, optimizer = initialize_model(config)
-    model.to(device)
+    model.to(device)'''
 
-    train_model(model, train_loader, val_loader, criterion, optimizer, device, config)
+    train_model(config)

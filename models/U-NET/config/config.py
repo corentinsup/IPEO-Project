@@ -47,10 +47,6 @@ class TrainingPaths:
     config_file: str
     dataset_path: str
     save_path: str
-    train_csv: str
-    val_csv: str
-    train_img_dir: str
-    val_img_dir: str
 
 @dataclass
 class InferencePaths:

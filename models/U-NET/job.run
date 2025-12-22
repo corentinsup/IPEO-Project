@@ -1,0 +1,21 @@
+#!/bin/bash -l
+#SBATCH --nodes=1
+#SBATCH --account=env540
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=32
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --time=00:45:00
+
+# Load modules
+module load gcc python
+
+# Activate virtual environment or conda environment
+source ~/ipeo_venv/bin/activate # Replace with your environment setup
+
+# enforce cache paths 
+export TORCH_HOME=$HOME/.cache/torch
+export HF_HOME=$HOME/.cache/huggingface
+
+# Run your Python script
+python IPEO-Project/models/U-NET/train.py --config IPEO-Project/models/U-NET/config/train.yaml  # Replace with your script name

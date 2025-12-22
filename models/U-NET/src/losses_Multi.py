@@ -33,10 +33,11 @@ class CE_DiceLoss(nn.Module):
         super(CE_DiceLoss, self).__init__()
         self.ce_loss = nn.CrossEntropyLoss()
         self.dice_loss = DiceLoss(smooth=smooth)
-        self.weights_ce = weights_ce
-        self.weights_dice = weights_dice
+        self.weights_ce = weights_ce if weights_ce is not None else 1.0
+        self.weights_dice = weights_dice if weights_dice is not None else 1.0
         
     def forward(self, pred, true):
-        ce = self.weights_ce * self.ce_loss(pred, true) if self.weights_ce is not None else self.ce_loss(pred, true)
-        dice = self.weights_dice * self.dice_loss(pred, true) if self.weights_dice is not None else self.dice_loss(pred, true)
+        # Ensure target is long type and within valid range [0, num_classes-1]
+        ce = self.weights_ce * self.ce_loss(pred, true)
+        dice = self.weights_dice * self.dice_loss(pred, true)
         return ce + dice

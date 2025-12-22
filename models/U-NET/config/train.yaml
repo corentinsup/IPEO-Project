@@ -1,12 +1,12 @@
 model_opts:
   batch_norm : True
   inchannels: 6
-  classes: 2
+  classes: 1
   lr: 0.0001
   weight_decay : 0
 
 training_opts: 
-  run_name: "demo"
+  run_name: "test1"
   num_epochs: 10
   batch_size: 32
 
@@ -31,12 +31,9 @@ metrics_opts:
 paths: 
   training:
     config_file: "/datadrive/glaciers/conf/train.yaml"
-    dataset_path: "data/output"
-    save_path: "best_model.pth"
-    train_csv: "path/to/csv"
-    val_csv: "path/to/csv"
-    train_img_dir: "path/to/images"
-    val_img_dir: "path/to/images"
+    #dataset_path: "../../scratch/izar/suply/dataset/data/output"
+    dataset_path: "./data/output"
+    save_path: "results"
   inference:
     config_file: "/datadrive/glaciers/conf/train.yaml"
     dataset_path: "path/to/data"

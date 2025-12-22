@@ -40,25 +40,25 @@ def pixel_acc(pred, true):
     count = true.shape[0] * true.shape[1] * true.shape[2]
     return torch.true_divide(correct, count)
 
-'''
-def dice(pred, true, label=1):
-    tp = ((pred == label) & (true == label)).sum(dim=[0, 1, 2])
-    fp = ((pred == label) & (true != label)).sum(dim=[0, 1, 2])
-    fn = ((pred != label) & (true == label)).sum(dim=[0, 1, 2])
-
-    return torch.true_divide(2 * tp, 2 * tp + fp + fn)
-'''
-
 def IoU(pred, true, label=1):
-    tp = ((pred == label) & (true == label)).sum(dim=[0, 1, 2])
-    fp = ((pred == label) & (true != label)).sum(dim=[0, 1, 2])
-    fn = ((pred != label) & (true == label)).sum(dim=[0, 1, 2])
+    tp = ((pred == label) & (true == label)).sum(dim=[-2, -1])
+    fp = ((pred == label) & (true != label)).sum(dim=[-2, -1])
+    fn = ((pred != label) & (true == label)).sum(dim=[-2, -1])
     return torch.true_divide(tp, tp + fp + fn)
 
+def dice(pred, true, label=1):
+    
+    tp = ((pred == label) & (true == label)).sum(dim=[-2, -1])
+    fp = ((pred == label) & (true != label)).sum(dim=[-2, -1])
+    fn = ((pred != label) & (true == label)).sum(dim=[-2, -1])
+    
+    result = torch.true_divide(2 * tp, 2 * tp + fp + fn)
+    result[(tp == 0) & (fp == 0) & (fn == 0)] = 0
+    
+    return result
 
 def metrics(y_hat, y, metrics_opts):
     results = {}
-
     for k, metric in metrics_opts.items():
 
         # copy tensors to avoid modifying in-place
