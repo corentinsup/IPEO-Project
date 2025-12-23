@@ -2,7 +2,7 @@
 from tqdm.auto import tqdm
 import torch
 
-def inference(model, loader, criterion=None, iou_metric=None, return_preds=False, device="cpu"):
+def run_eval(model, loader, criterion=None, iou_metric=None, return_preds=False, device="cpu"):
     """Runs inference on the provided DataLoader. Optionally computes loss and IoU metric if provided.
 
     Args:
