@@ -1,5 +1,5 @@
 # Utilities for the training loop
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import torch
 
 def train_one_epoch(model, loader, optimizer, criterion, device):
@@ -18,7 +18,7 @@ def train_one_epoch(model, loader, optimizer, criterion, device):
     model.train()
     running_loss = 0.0
     
-    pbar = tqdm(loader, desc="Training", leave=False, position=1)
+    pbar = tqdm(loader, desc="Training", leave=False)
     for images, masks in pbar:
         images, masks = images.to(device), masks.to(device)
         
@@ -59,7 +59,7 @@ def validate_one_epoch(model, loader, criterion, iou_metric, device):
     # reset IoU
     iou_metric.reset()
     
-    pbar = tqdm(loader, desc="Validation", leave=False, position=1)
+    pbar = tqdm(loader, desc="Validation", leave=False)
     with torch.no_grad():
         for images, masks in pbar:
             images, masks = images.to(device), masks.to(device)
