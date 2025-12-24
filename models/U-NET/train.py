@@ -13,6 +13,7 @@ from src.metrics import metrics, update_metrics, agg_metrics
 from src.losses_binary import BinaryDiceLoss, DiceBCELoss
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+from torchvision.transforms import v2 as T
 
 def save_model(model, optimizer, epoch, loss, path):
     """Saves the model state, optimizer state, epoch, and loss to the given path."""
@@ -144,12 +145,22 @@ def train_model(config):
     model, criterion, optimizer = initialize_model(config)
     model.to(device)
 
+    # transforms 
+    transforms = T.Compose([
+        T.RandomResizedCrop(size=(128, 128), antialias=True),
+        T.RandomHorizontalFlip(p=0.5),
+        T.ToDtype(torch.float32, scale=True),
+    ])
+
     # fetch data loaders
     print("Fetching data loaders...")
     train_loader, val_loader = fetch_loaders(
         npz_path=config.paths.training.dataset_path,
+        mode='train',
+        val_size=config.training_opts.val_size,
+        transform=transforms,
         batch_size=config.training_opts.batch_size,
-        shuffle=True
+        train_shuffle=True
     )
 
     best_val_loss = float('inf')
