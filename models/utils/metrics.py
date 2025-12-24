@@ -3,7 +3,7 @@ import segmentation_models_pytorch as smp
 from torchmetrics import JaccardIndex
 import torch.nn as nn
 
-def get_dice_loss(ignore_index=255):
+def get_dice_loss(mode="multiclass", ignore_index=255):
     """Get Dice loss from segmentation_models_pytorch library.
     
     Args:
@@ -12,13 +12,13 @@ def get_dice_loss(ignore_index=255):
         smp.losses.DiceLoss: Dice loss function.
     """
     return smp.losses.DiceLoss(
-        mode='multiclass',  # Since our output has one channel per class
+        mode=mode,  # adapt to binary or multiclass
         from_logits=True,
         ignore_index=ignore_index    
     )
     
     
-def get_iou_metric(ignore_index=255):
+def get_iou_metric(mode="multiclass", ignore_index=255):
     """Get IoU metric from torchmetrics library. 
     This function is updated each batch with .update() and the final result is obtained with compute().
     
@@ -28,9 +28,9 @@ def get_iou_metric(ignore_index=255):
     Returns:
         torchmetrics.JaccardIndex: IoU metric function.
     """
-    return JaccardIndex(task="multiclass", num_classes=2, ignore_index=ignore_index).to("cuda")
+    return JaccardIndex(task=mode, num_classes=2, ignore_index=ignore_index).to("cuda")
 
-def get_combined_loss(factor_BCE, factor_DICE,ignore_index=255):
+def get_combined_loss(factor_BCE, factor_DICE, model, ignore_index=255):
     """Get a combined loss function that sums Dice loss and Cross Entropy loss.
     
     Args:
@@ -42,8 +42,15 @@ def get_combined_loss(factor_BCE, factor_DICE,ignore_index=255):
     """
     
     assert factor_BCE + factor_DICE == 1.0, "The sum of factor_BCE and factor_DICE must be 1.0"
-    dice_loss_fn = get_dice_loss(ignore_index=ignore_index)
-    ce_loss_fn = nn.CrossEntropyLoss(ignore_index=ignore_index)
+
+    if model == 'DinoV3':
+        print("Using DinoV3 combined loss")
+        dice_loss_fn = get_dice_loss(mode = "multiclass", ignore_index=ignore_index)
+        ce_loss_fn = nn.CrossEntropyLoss(ignore_index=ignore_index)
+    else:  # U-NET
+        print("Using U-NET combined loss")
+        dice_loss_fn = get_dice_loss(mode = "binary", ignore_index=ignore_index)
+        ce_loss_fn = nn.BCEWithLogitsLoss()
     
     def combined_loss(preds, targets):
         loss_dice = dice_loss_fn(preds, targets)

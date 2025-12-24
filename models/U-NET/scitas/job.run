@@ -11,11 +11,11 @@
 module load gcc python
 
 # Activate virtual environment or conda environment
-source ~/ipeo_venv/bin/activate # Replace with your environment setup
+source ~/venvs/ipeo/bin/activate
 
 # enforce cache paths 
 export TORCH_HOME=$HOME/.cache/torch
 export HF_HOME=$HOME/.cache/huggingface
 
 # Run your Python script
-python IPEO-Project/models/U-NET/train.py --config IPEO-Project/models/U-NET/config/train.yaml  # Replace with your script name
+python IPEO-Project/models/U-NET/train.py --config IPEO-Project/models/U-NET/config/train.yaml
