@@ -30,15 +30,15 @@ def save_model(model, optimizer, epoch, loss, path):
 
 def initialize_model(config):
     # model initialization
-    model = smp.Unet(
+    model = smp.UnetPlusPlus(
         encoder_name="resnet34",
         encoder_weights="imagenet",
         decoder_use_batchnorm=config.model_opts.batch_norm,
-        in_channels=3, # RGB + NIR channels
+        in_channels=config.model_opts.inchannels, # RGB + SWIR1 channels
         classes=config.model_opts.classes,    # glacier vs non-glacier
     )
 
-    # need to create a new conv layer for the new input channels
+    '''# need to create a new conv layer for the new input channels
     old_conv = model.encoder.conv1
 
     new_conv = nn.Conv2d(
@@ -58,20 +58,14 @@ def initialize_model(config):
             mean_weight = old_conv.weight.mean(dim=1, keepdim=True)
             for i in range(3, config.model_opts.inchannels):
                 new_conv.weight[:, i:i+1, :, :] = mean_weight
-        
-        '''trained_kernel = trained_layer.weight # this is the pretrained RGB kernel
-        new_conv = nn.ConvLayer2d( 6, out_channels, kernel_size, ...)
-        new_conv.weight[:,:3] = trained_kernel
-        # if d is the dimension over which you want to average:
-        new_conv.weight[:,3:] = torch.mean(trained_kernel, d).unsqueeze(d).expand_as(trained_kernel)'''
-        
+                
         # Copy bias if it exists
         if old_conv.bias is not None:
             new_conv.bias = old_conv.bias
 
     # Replace the model's first conv layer with the new one
-    model.encoder.conv1 = new_conv
-
+    model.encoder.conv1 = new_conv'''
+'''
     # define loss function and optimizer
     if config.loss_opts.type == "DiceLoss":
         criterion = BinaryDiceLoss(smooth=config.loss_opts.smooth)
@@ -83,7 +77,9 @@ def initialize_model(config):
         criterion = torch.nn.BCEWithLogitsLoss()
 
     optimizer = torch.optim.Adam(model.parameters(), lr=config.model_opts.lr, weight_decay=config.model_opts.weight_decay)
-    return model, criterion, optimizer
+    return model, criterion, optimizer'''
+    
+    return model
 
 def train_one_epoch(model, dataloader, criterion, optimizer, device, metrics_opts):
     model.train()
