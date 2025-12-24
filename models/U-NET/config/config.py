@@ -19,6 +19,7 @@ class TrainingOpts:
     run_name: str
     num_epochs: int
     batch_size: int
+    val_size: float
 
 # LOSS OPTIONS
 @dataclass
