@@ -28,21 +28,21 @@ def save_model(model, optimizer, epoch, loss, path):
     }, path)
     print(f"Model saved to {path}")
 
-def initialize_model(config):
+def initialize_Unet(inchannels=3, classes=2):
     # model initialization
     model = smp.UnetPlusPlus(
         encoder_name="resnet34",
         encoder_weights="imagenet",
-        decoder_use_batchnorm=config.model_opts.batch_norm,
-        in_channels=config.model_opts.inchannels, # RGB + SWIR1 channels
-        classes=config.model_opts.classes,    # glacier vs non-glacier
+        decoder_use_batchnorm=True,
+        in_channels=inchannels, # RGB + SWIR1 channels
+        classes=classes,    # glacier vs non-glacier
     )
 
-    '''# need to create a new conv layer for the new input channels
+    # need to create a new conv layer for the new input channels
     old_conv = model.encoder.conv1
 
     new_conv = nn.Conv2d(
-        in_channels=config.model_opts.inchannels, 
+        in_channels=inchannels, 
         out_channels=old_conv.out_channels, 
         kernel_size=old_conv.kernel_size, 
         stride=old_conv.stride, 
@@ -54,9 +54,9 @@ def initialize_model(config):
     with torch.no_grad():
         new_conv.weight[:, :3, :, :] = old_conv.weight
         # Initialize the additional channels (4-6) as the mean of the first three
-        if config.model_opts.inchannels > 3:
+        if inchannels > 3:
             mean_weight = old_conv.weight.mean(dim=1, keepdim=True)
-            for i in range(3, config.model_opts.inchannels):
+            for i in range(3, inchannels):
                 new_conv.weight[:, i:i+1, :, :] = mean_weight
                 
         # Copy bias if it exists
@@ -64,7 +64,10 @@ def initialize_model(config):
             new_conv.bias = old_conv.bias
 
     # Replace the model's first conv layer with the new one
-    model.encoder.conv1 = new_conv'''
+    model.encoder.conv1 = new_conv
+    
+    return model
+
 '''
     # define loss function and optimizer
     if config.loss_opts.type == "DiceLoss":
@@ -79,7 +82,7 @@ def initialize_model(config):
     optimizer = torch.optim.Adam(model.parameters(), lr=config.model_opts.lr, weight_decay=config.model_opts.weight_decay)
     return model, criterion, optimizer'''
     
-    return model
+    #return model
 
 def train_one_epoch(model, dataloader, criterion, optimizer, device, metrics_opts):
     model.train()

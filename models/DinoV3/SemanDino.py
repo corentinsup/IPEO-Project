@@ -33,6 +33,7 @@ class GlacierEncoder(nn.Module):
             x : Preprocessed image batch of shape (B, 3, H, W)
         """
         
+        
         # Forward pass through DINO model
         outputs = self.dino_model(x)
         B, C, H, W = x.shape
@@ -121,11 +122,13 @@ class GlacierSegmenter(nn.Module):
         
     def forward(self, x):
         # freeze the encoder
+        self.encoder.eval()
         with torch.no_grad():
             features = self.encoder(x)
             
         segmentation_map = self.decoder(features)
         return segmentation_map
+    
     
     
 class UpBlock(nn.Module):

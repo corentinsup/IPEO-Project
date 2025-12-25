@@ -30,7 +30,7 @@ def get_iou_metric(mode="multiclass", ignore_index=255):
     """
     return JaccardIndex(task=mode, num_classes=2, ignore_index=ignore_index).to("cuda")
 
-def get_combined_loss(factor_BCE, factor_DICE, model, ignore_index=255):
+def get_combined_loss(factor_BCE, factor_DICE, ignore_index=255):
     """Get a combined loss function that sums Dice loss and Cross Entropy loss.
     
     Args:
@@ -43,14 +43,11 @@ def get_combined_loss(factor_BCE, factor_DICE, model, ignore_index=255):
     
     assert factor_BCE + factor_DICE == 1.0, "The sum of factor_BCE and factor_DICE must be 1.0"
 
-    if model == 'DinoV3':
-        print("Using DinoV3 combined loss")
-        dice_loss_fn = get_dice_loss(mode = "multiclass", ignore_index=ignore_index)
-        ce_loss_fn = nn.CrossEntropyLoss(ignore_index=ignore_index)
-    else:  # U-NET
-        print("Using U-NET combined loss")
-        dice_loss_fn = get_dice_loss(mode = "binary", ignore_index=ignore_index)
-        ce_loss_fn = nn.BCEWithLogitsLoss()
+    dice_loss_fn = get_dice_loss(mode = "multiclass", ignore_index=ignore_index)
+    ce_loss_fn = nn.CrossEntropyLoss(ignore_index=ignore_index)
+    # else:  # U-NET
+    #     dice_loss_fn = get_dice_loss(mode = "binary", ignore_index=ignore_index)
+    #     ce_loss_fn = nn.BCEWithLogitsLoss()
     
     def combined_loss(preds, targets):
         loss_dice = dice_loss_fn(preds, targets)
