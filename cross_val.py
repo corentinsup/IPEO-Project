@@ -91,7 +91,7 @@ def is_logged_in_wandb_hf(model="DinoV3"):
     """
     try:
         wandb_api = wandb.Api()
-        _ = wandb_api.viewer()
+        _ = wandb_api.viewer
         # If we aren't using the DinoV3 model, we skip the HF login check
         if model == "DinoV3":
             hf_user = whoami()
