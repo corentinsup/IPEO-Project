@@ -62,6 +62,27 @@ def parse_args():
         default="DinoV3",
         help="Model architecture to use for segmentation.",
     )
+    parser.add_argument(
+        "--resume_lr",
+        type=float,
+        choices=LRS,
+        default=None,
+        help="Learning rate for the optimizer - if the script crashed at some point.",
+    )
+    parser.add_argument(
+        "--resume_ce_weight",
+        type=float,
+        choices=[w[0] for w in LOSS_WEIGHTS],
+        default=None,
+        help="Cross-Entropy loss weight - if the script crashed at some point.",
+    )
+    parser.add_argument(
+        "--resume_dice_weight",
+        type=float,
+        choices=[w[1] for w in LOSS_WEIGHTS],
+        default=None,
+        help="Dice loss weight - if the script crashed at some point.",
+    )
     return parser.parse_args()
 
 def is_logged_in_wandb_hf(model="DinoV3"):
