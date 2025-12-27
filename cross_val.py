@@ -276,6 +276,9 @@ def main():
     args = parse_args()
     model_name = args.model
     
+    print("Checking W&B and Hugging Face login...")
+    is_logged_in_wandb_hf(model_name)
+    
     print(f"Starting cross-validation for model: {model_name}")
     
     full_train_ds = GlacierDataset(
@@ -310,9 +313,6 @@ def main():
     
 
 if __name__ == "__main__":
-    print("Checking W&B and Hugging Face login...")
-    is_logged_in_wandb_hf()
-    
     main()
 
 
