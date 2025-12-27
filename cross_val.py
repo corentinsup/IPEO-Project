@@ -141,7 +141,9 @@ def k_fold_experiment(lr, ce_weight, dice_weight, full_train_ds, train_ds_for_va
                 in_channels=3,
                 classes=NUM_CLASS,
             ).to(device)
-            model.freeze_encoder() # https://smp.readthedocs.io/en/latest/insights.html
+            # Freeze encoder
+            for param in model.encoder.parameters():
+                param.requires_grad = False
         else: # DinoV3
             model = GlacierSegmenter(num_classes=NUM_CLASS).to(device)
 
