@@ -8,20 +8,37 @@ import torchvision.transforms.functional as TF
 from torchvision import transforms
 from torchvision.transforms import InterpolationMode 
 
-# --- CONSTANTS ---
+# CONSTANTS
 SCALE_FACTOR = 10000.0
 DINO_MEAN = [0.430, 0.411, 0.296] # see GitHub DINOv3
 DINO_STD  = [0.213, 0.156, 0.143]
-TARGET_SIZE = (224, 224) # Strict size for DINOv3 small
+IMAGENET_MEAN = [0.485, 0.456, 0.406] # Standard ImageNet values
+IMAGENET_STD  = [0.229, 0.224, 0.225]
+TARGET_SIZE = (224, 224) # Strict size
 
 class GlacierDataset(Dataset):
-    def __init__(self, image_dir, mask_dir, mode="train"):
+    
+    def __init__(self, image_dir, mask_dir, model, mode="train"):
+        """Initializes the Glacier Dataset.
+
+        Args:
+            image_dir (str): Path to the directory containing images.
+            mask_dir (str): Path to the directory containing masks.
+            model (str): Either 'DinoV3' or 'UNet'. (needed for normalization)
+            mode (str, optional): Mode of the dataset, either "train" or "test" (disables data augmentation). Defaults to "train".
+        """
         self.image_dir = image_dir
         self.mask_dir = mask_dir
         self.mode = mode
         self.images = [f for f in os.listdir(image_dir) if f.endswith('.tif')]
-        self.normalize = transforms.Normalize(mean=DINO_MEAN, std=DINO_STD)
-
+        
+        assert model in ["DinoV3", "UNet"], "Model not supported, use either 'DinoV3' or 'UNet'."
+        self.model = model
+        if model == "UNet":
+            self.normalize = transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD)
+        else: 
+            self.normalize = transforms.Normalize(mean=DINO_MEAN, std=DINO_STD)
+        
     def __len__(self):
         return len(self.images)
 
@@ -76,4 +93,18 @@ class GlacierDataset(Dataset):
         img_tensor = self.normalize(img_tensor)
 
         return img_tensor, mask_tensor
+    
+    def get_group(self, idx):
+        """To avoid spatial leakage, we return the uid of the glacier extracted from the filename.
+        
+        Args:
+            idx (int): index of the sample
+        Returns:
+            str: the uid of the glacier (filename without the tile extension)
+        """
+        img_name = self.images[idx]
+        uid = img_name.split('_tile')[0]
+        return uid
+        
+    
     
