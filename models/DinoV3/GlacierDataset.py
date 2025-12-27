@@ -9,7 +9,7 @@ from torchvision import transforms
 from torchvision.transforms import InterpolationMode 
 
 # CONSTANTS
-SCALE_FACTOR = 10000.0
+SCALE_FACTOR = 10000.0 #  QUANTIFICATION_VALUE, see https://sentiwiki.copernicus.eu/web/s2-processing#:~:text=The%20reflectance,%20often%20between%200%20and%201,%20is%20converted%20into%20integer%20values,%20to%20preserve%20the%20dynamic%20range%20of%20the%20data%20by%20applying%20a%20fixed%20coefficient%20(10000%20by%20default)%20called
 DINO_MEAN = [0.430, 0.411, 0.296] # see GitHub DINOv3
 DINO_STD  = [0.213, 0.156, 0.143]
 IMAGENET_MEAN = [0.485, 0.456, 0.406] # Standard ImageNet values
@@ -38,6 +38,8 @@ class GlacierDataset(Dataset):
             self.normalize = transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD)
         else: 
             self.normalize = transforms.Normalize(mean=DINO_MEAN, std=DINO_STD)
+        
+        self.groups = [img.split('_tile')[0] for img in self.images]
         
     def __len__(self):
         return len(self.images)
@@ -94,17 +96,6 @@ class GlacierDataset(Dataset):
 
         return img_tensor, mask_tensor
     
-    def get_group(self, idx):
-        """To avoid spatial leakage, we return the uid of the glacier extracted from the filename.
-        
-        Args:
-            idx (int): index of the sample
-        Returns:
-            str: the uid of the glacier (filename without the tile extension)
-        """
-        img_name = self.images[idx]
-        uid = img_name.split('_tile')[0]
-        return uid
         
     
     
