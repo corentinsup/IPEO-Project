@@ -58,9 +58,12 @@ def parse_args():
     )
     return parser.parse_args()
 
-def is_logged_in_wandb_hf():
+def is_logged_in_wandb_hf(model="DinoV3"):
     """
     Check if the user is logged in both W&B and Hugging Face.
+    
+    Args:
+        model (str, optional): Model name for logging context. Defaults to "DinoV3".
     
     Returns:
         bool: True if logged in both W&B and Hugging Face, False otherwise.
@@ -68,7 +71,10 @@ def is_logged_in_wandb_hf():
     try:
         wandb_api = wandb.Api()
         _ = wandb_api.viewer()
-        hf_user = whoami()
+        # If we aren't using the DinoV3 model, we skip the HF login check
+        if model == "DinoV3":
+            hf_user = whoami()
+            
         return True
     except Exception as e:
         print(f"Not logged in: {e}")
