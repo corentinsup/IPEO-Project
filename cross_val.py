@@ -56,6 +56,27 @@ def parse_args():
         default="DinoV3",
         help="Model architecture to use for segmentation.",
     )
+    parser.add_argument(
+        "--resume_lr",
+        type=float,
+        choices=LRS,
+        default=None,
+        help="Learning rate for the optimizer - if the script crashed at some point.",
+    )
+    parser.add_argument(
+        "--resume_ce_weight",
+        type=float,
+        choices=[w[0] for w in LOSS_WEIGHTS],
+        default=None,
+        help="Cross-Entropy loss weight - if the script crashed at some point.",
+    )
+    parser.add_argument(
+        "--resume_dice_weight",
+        type=float,
+        choices=[w[1] for w in LOSS_WEIGHTS],
+        default=None,
+        help="Dice loss weight - if the script crashed at some point.",
+    )
     return parser.parse_args()
 
 def is_logged_in_wandb_hf(model="DinoV3"):
@@ -300,6 +321,13 @@ def main():
     
     for lr in LRS:
         for ce_weight, dice_weight in LOSS_WEIGHTS:
+            
+            # Resume capability
+            if (args.resume_lr is not None and lr != args.resume_lr) or \
+                (args.resume_ce_weight is not None and ce_weight != args.resume_ce_weight) or \
+                (args.resume_dice_weight is not None and dice_weight != args.resume_dice_weight):
+                print(f"Resuming: Skipping lr={lr}, ce={ce_weight}, dice={dice_weight} due to resume settings.")
+                continue
             
             results.append(k_fold_experiment(lr, ce_weight, dice_weight, full_train_ds, train_ds_for_val, model_name))
             
