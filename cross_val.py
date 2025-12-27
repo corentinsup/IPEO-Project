@@ -318,16 +318,19 @@ def main():
     
     # Final results
     results = []
+    skipping = args.resume_lr is not None and args.resume_ce_weight is not None and args.resume_dice_weight is not None
     
     for lr in LRS:
         for ce_weight, dice_weight in LOSS_WEIGHTS:
             
             # Resume capability
-            if (args.resume_lr is not None and lr != args.resume_lr) or \
-                (args.resume_ce_weight is not None and ce_weight != args.resume_ce_weight) or \
-                (args.resume_dice_weight is not None and dice_weight != args.resume_dice_weight):
-                print(f"Resuming: Skipping lr={lr}, ce={ce_weight}, dice={dice_weight} due to resume settings.")
-                continue
+            if skipping:
+                if not (lr == args.resume_lr and ce_weight == args.resume_ce_weight and dice_weight == args.resume_dice_weight):
+                    print(f"Skipping lr={lr}, ce={ce_weight}, dice={dice_weight}...")
+                    continue
+                else:
+                    print(f"Resuming from lr={lr}, ce={ce_weight}, dice={dice_weight}...")
+                    skipping = False  # disable further skipping
             
             results.append(k_fold_experiment(lr, ce_weight, dice_weight, full_train_ds, train_ds_for_val, model_name))
             
