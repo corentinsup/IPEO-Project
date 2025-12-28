@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=32
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
-#SBATCH --time=15:00:00
+#SBATCH --time=05:00:00
 
 # Load modules
 module load gcc python
@@ -13,4 +13,4 @@ module load gcc python
 # Activate virtual environment or conda environment
 source ~/venvs/ipeo_venv/bin/activate
 
-python cross_val.py --model UNet
+python cross_val_unet.py --model UNet --resume_lr 1e-5 --resume_ce_weight 0.7 --resume_dice_weight 0.3
