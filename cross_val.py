@@ -3,6 +3,7 @@
 #
 
 # Lib Imports
+import gc
 import numpy as np
 import pandas as pd
 import torch, os, wandb
@@ -272,6 +273,14 @@ def k_fold_experiment(lr, ce_weight, dice_weight, full_train_ds, train_ds_for_va
         fold_best_ious.append(best_val_iou)
         fold_best_epochs.append(best_epoch)
         fold_ckpts.append(best_ckpt_path)
+        
+        # Cleanup to avoid errors with too many open files
+        del train_loader
+        del val_loader
+        del model
+        del optimizer
+        gc.collect()
+        torch.cuda.empty_cache()
         
     # After all folds -> we do the stats
     mean_iou = float(np.mean(fold_best_ious)) if fold_best_ious else float("nan")
