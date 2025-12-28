@@ -339,7 +339,7 @@ def main():
             
     # Save intermediate results
     results_df = pd.DataFrame([results])
-    results_df.to_csv(f"k_fold_epoch_results_{model_name}.csv", index=False)    
+    results_df.to_csv(f"k_fold_epoch_results_{model_name}_{int(datetime.now().timestamp())}.csv", index=False)    
 
 if __name__ == "__main__":
     main()
