@@ -27,7 +27,7 @@ NUM_CLASS = 2
 BATCH_SIZE = 8
 MAX_EPOCHS = 150
 PATIENCE = 10 # Early stopping patience
-MIN_DELTA = 0.002 # Minimum change to qualify as an improvement in the pateince mechanism
+MIN_DELTA = 0.0005 # Minimum change to qualify as an improvement in the patience mechanism
 N_SPLITS = 5 # K-Fold splits
 NUM_WORKERS = 4 # DataLoader workers
 
