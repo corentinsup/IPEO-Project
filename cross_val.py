@@ -45,7 +45,7 @@ LOSS_WEIGHTS = [(0.5, 0.5), (0.7, 0.3), (0.3, 0.7), (1, 0), (0, 1)]  # (CE weigh
 
 def parse_args():
     """
-    Parse command line arguments. You can select the model architecture here.
+    Parse command line arguments. You can select the model architecture here, whether to save checkpoints or resume from a previous run.
     The model can be Either 'UNet' or 'DinoV3'.
     """
     parser = ArgumentParser(description="Cross-validation for hyperparameter tuning")
@@ -77,6 +77,12 @@ def parse_args():
         default=None,
         help="Dice loss weight - if the script crashed at some point.",
     )
+    parser.add_argument(
+        "--save_checkpoints",
+        type=bool,
+        default=False,
+        help="Whether to save model checkpoints during training.",
+    )
     return parser.parse_args()
 
 def is_logged_in_wandb_hf(model="DinoV3"):
@@ -102,7 +108,7 @@ def is_logged_in_wandb_hf(model="DinoV3"):
         return False
     
     
-def k_fold_experiment(lr, ce_weight, dice_weight, full_train_ds, train_ds_for_val, model_name, device='cuda'): 
+def k_fold_experiment(lr, ce_weight, dice_weight, full_train_ds, train_ds_for_val, model_name, device='cuda', save_checkpoints=True): 
     """Performs grouped K-Fold for the given hyperparameters and dataset.
 
     Args:
@@ -113,8 +119,9 @@ def k_fold_experiment(lr, ce_weight, dice_weight, full_train_ds, train_ds_for_va
         train_ds_for_val (Dataset): Dataset used for validation.
         model_name (str): Name of the model architecture to use.
         device (str, optional): Device to run the training on. Defaults to 'cuda'.
+        save_checkpoints (bool, optional): Whether to save model checkpoints. Defaults to True.
     Returns:
-        ??
+        dict: Dictionary containing results and statistics from the K-Fold experiment.
     """
     
     # gkf doesn't support shuffling so we do it manually
@@ -244,10 +251,11 @@ def k_fold_experiment(lr, ce_weight, dice_weight, full_train_ds, train_ds_for_va
                 best_val_iou = val_iou
                 best_epoch = epoch
                 no_improve_epochs = 0  # reset counter
-                torch.save(
-                    model.state_dict(),
-                    best_ckpt_path
-                )   
+                if save_checkpoints:
+                    torch.save(
+                        model.state_dict(),
+                        best_ckpt_path
+                    )   
             else:
                 no_improve_epochs += 1
             # Early Stopping
@@ -300,6 +308,12 @@ def main():
     print("Checking W&B and Hugging Face login...")
     is_logged_in_wandb_hf(model_name)
     
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(f"Using device: {device}")
+    
+    save_checkpoints = args.save_checkpoints
+    print(f"Model checkpoints will {'be' if save_checkpoints else 'not be'} saved during training.")
+    
     print(f"Starting cross-validation for model: {model_name}")
     
     full_train_ds = GlacierDataset(
@@ -332,7 +346,7 @@ def main():
                     print(f"Resuming from lr={lr}, ce={ce_weight}, dice={dice_weight}...")
                     skipping = False  # disable further skipping
             
-            results.append(k_fold_experiment(lr, ce_weight, dice_weight, full_train_ds, train_ds_for_val, model_name))
+            results.append(k_fold_experiment(lr, ce_weight, dice_weight, full_train_ds, train_ds_for_val, model_name, device, save_checkpoints))
             
             # Save intermediate results
             results_df = pd.DataFrame(results)
