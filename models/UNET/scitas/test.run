@@ -13,4 +13,4 @@ module load gcc python
 # Activate virtual environment or conda environment
 source ~/venvs/ipeo_venv/bin/activate
 
-python cross_val_unet.py --model UNet --resume_lr 1e-5 --resume_ce_weight 0.7 --resume_dice_weight 0.3
+python train.py --model UNet --lr 0.001 --ce_weight 0.5 --dice_weight 0.5 --epochs 56
