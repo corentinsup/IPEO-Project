@@ -54,6 +54,10 @@ class GlacierDataset(Dataset):
             image = src.read([3, 2, 1]).astype(np.float32)
         with rasterio.open(mask_path) as src:
             mask = src.read(1).astype(np.int64)
+            
+        # The test set has some missing info due to the swiss border, we will add it to the ignore index
+        is_nodata = np.sum(image, axis=0) == 0
+        mask[is_nodata] = 255
 
         # Physical scaling
         image = image / SCALE_FACTOR
