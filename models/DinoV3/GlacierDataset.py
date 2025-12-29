@@ -100,6 +100,25 @@ class GlacierDataset(Dataset):
 
         return img_tensor, mask_tensor
     
+    def denormalize(self, tensor):
+        """Denormalizes a tensor using the dataset's normalization parameters.
+
+        Args:
+            tensor (torch.Tensor): The normalized tensor to denormalize.
+
+        Returns:
+            torch.Tensor: The denormalized tensor.
+        """
+        if self.model == "UNet":
+            mean = torch.tensor(IMAGENET_MEAN).view(3, 1, 1)
+            std = torch.tensor(IMAGENET_STD).view(3, 1, 1)
+        else:
+            mean = torch.tensor(DINO_MEAN).view(3, 1, 1)
+            std = torch.tensor(DINO_STD).view(3, 1, 1)
+        
+        denormalized = tensor * std + mean
+        return denormalized
+    
         
     
     
