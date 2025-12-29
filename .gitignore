@@ -10,7 +10,8 @@ __pycache__/
 
 # Data folder
 data/
-results/
+results/*
+!results/*.csv
 
 # Distribution / packaging
 .Python
