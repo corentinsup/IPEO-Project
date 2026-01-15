@@ -27,6 +27,7 @@ Other files/code:
     - "train.py" is the final script that we used to obtain the weights with the approriate hyper-parameters and number of epochs.
     - "./scitas/" contains a sample script to run a training on scitas.
     - "./glamos/" contains the Swiss Glacier Inventory dataset of Glamos (used by the dataset generation notebook).
+    - "./models/" contains two subfolders: "./DinoV3" (model's implementation and Dataloader) and "./utils" (metrics and train/validate epochs functions).
 
 Data provenance (more detailed in report):
     - The satelite imagery was extracted from Sentinel-2, using the Google Eart Engine API.
