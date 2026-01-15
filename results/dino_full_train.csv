@@ -1,0 +1,2 @@
+"Name","Test IoU","State","Notes","User","Tags","Created","Runtime","Sweep","batch_size","ce_weight","dice_weight","epochs","ignore_index","lr","num_classes","num_workers","Test Loss","Train Loss"
+"full_train_DinoV3_LR0.0001_CE0.5_Dice0.5_Epochs45","0.7703162431716919","finished","-","","","2025-12-28T10:15:57.000Z","487","","8","0.5","0.5","45","255","0.0001","2","4","0.26549478123585385","0.09330267092024072"

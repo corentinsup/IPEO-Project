@@ -1,0 +1,2 @@
+"Name","State","Notes","User","Tags","Created","Runtime","Sweep","batch_size","ce_weight","dice_weight","epochs","ignore_index","lr","num_classes","num_workers","Test IoU","Test Loss","Train Loss"
+"full_train_UNet_LR0.001_CE0.5_Dice0.5_Epochs56","finished","-","","","2025-12-28T16:57:46.000Z","246","","8","0.5","0.5","56","255","0.001","2","4","0.7573152780532837","0.3086321298032999","0.08731886026436005"
