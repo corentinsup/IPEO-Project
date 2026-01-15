@@ -8,6 +8,9 @@ Dataset Location:
     - The dataset generated for this project can be found in the ./dataset/clean/ directory for the training samples and in ./dataset/test for the testing.
     - All images and masks are directly hosted on the GitHub Repository, so you should be able to find them after cloning the Repository.
 
+Weight Location:
+    - Our pretrained weights are automatically downloaded using the gdown library by the inference notebook, but if you want to access them manually: https://drive.google.com/drive/folders/1SaA_HTc3AcT-HktbqhgoshBrBKtsL56w?usp=sharing
+
 Environment and inference: 
     - The required inference notebook is inference.ipynb.
     - Please click on the button at the top, "Open in Colab", which will redirect you to a functional notebook hosted on Google Colab.
