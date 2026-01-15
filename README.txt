@@ -17,6 +17,13 @@ Environment and inference:
     - Simply follow the instruction of the notebook, which will install the requirements defined in requirements.txt (this might take up to 10minutes since it builds libraries)
     - The HuggingFace step is not necessary if you want to use uniquely the U-Net++ model
 
+Other files/code:
+    - The dataset generation code is in the "Dataset pipeline.ipynb" notebook. Note that you will need a working python environment linked to your Google Earth engine account.
+    - "cross_val.py" is the script used to run our K-Fold Cross-validation experiments to get the hyper-parameters.
+    - "k-fold_epochs.py" is the K-Fold Cross-validation used to fine the appropriate number of epochs to run our model.
+    - "train.py" is the final script that we used to obtain the weights with the approriate hyper-parameters and number of epochs.
+    - "./scitas/" contains a sample script to run a training on scitas
+    - "./glamos/" contains the Swiss Glacier Inventory dataset of Glamos. (used by the dataset generation notebook)
 
-Data provenance:
+Data provenance (more detailed in report):
     - The satelite imagery was extracted from Sentinel-2, using the Google Eart Engine API.
